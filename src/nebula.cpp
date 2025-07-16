@@ -79,21 +79,21 @@ void setGLContextAttributes() {
 void setGLBufferAttributes() {
     // 8 bits to each channel RGBA8888
     // meaning 256 values for each channel (0 to 255)
-	SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-	SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
 
     // double buffer (back and front)
     // switch with SDL_GL_SwapWindow
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     // if the framebuffer content is preserved when minimizing window
-	SDL_GL_SetAttribute(SDL_GL_RETAINED_BACKING, 0);
+    SDL_GL_SetAttribute(SDL_GL_RETAINED_BACKING, 0);
 
     // z-buffer size (usually 24 bits)
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     // stencil buffer size (8 bits)
-	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 }
 
 void cleanup(SDL_Window *window) {
