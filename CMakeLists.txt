@@ -6,11 +6,14 @@ project(nebula VERSION 0.1.0)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set(CMAKE_CXX_STANDARD 17)
 
+add_library(glad STATIC libs/glad/glad.c)
+target_include_directories(glad PRIVATE libs/glad/include/)
+
 # Uncomment to use static lib
 # option(BUILD_SHARED_LIBS OFF)
-
 add_subdirectory(libs/SDL3)
 
 add_executable(nebula)
 target_sources(nebula PRIVATE src/nebula.cpp)
-target_link_libraries(nebula PRIVATE SDL3::SDL3)
+target_link_libraries(nebula PRIVATE SDL3::SDL3 glad)
+target_include_directories(nebula PRIVATE libs/glad/include/)
