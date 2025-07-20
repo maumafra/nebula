@@ -1,6 +1,7 @@
 #include <SDL3/SDL.h>
 #include <glad/glad.h>
 #include <iostream>
+#include <Window/window.h>
 
 const char *vertexShaderSource = "#version 330 core\n"
                                  "layout (location = 0) in vec3 aPos;\n"
@@ -14,47 +15,29 @@ const char *fragmentShaderSource = "#version 330 core\n"
                                    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n" //orange-ish color
                                    "}\0";
 
-void setGLContextAttributes();
-void setGLBufferAttributes();
 void getGLVersionInfo();
-unsigned int setupShaders(SDL_Window *window);
-void cleanup(SDL_Window *window);
+unsigned int setupShaders();
+void cleanup();
 
 // cmake . -B build
 // cmake --build build
 // build\Debug\nebula
 
 int main() {
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing SDL3", nullptr);
-        return 1;
-    }
 
-    int width = 800;
-    int height = 600;
-
-    setGLContextAttributes();
-    setGLBufferAttributes();
-
-    SDL_Window *window = SDL_CreateWindow("nebula", 
-        width,
-        height,
-        SDL_WINDOW_OPENGL
-    );
-    if (!window) {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error creating window", nullptr);
-        cleanup(window);
-        return 1;
-    }
-
-    SDL_GLContext context = SDL_GL_CreateContext(window);
+    nebula::window::Window window = nebula::window::Window();
+    window.setWindow();
+    
+    int width = window.getWidth();
+    int height = window.getHeight();
 
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing GLAD", nullptr);
-        cleanup(window);
+        window.close();
+        cleanup();
         return 1;
     }
-
+    
     getGLVersionInfo();
 
     float vertices[] = {
@@ -63,10 +46,11 @@ int main() {
          0.0f,  0.5f, 0.0f
     };
 
-    unsigned int shaderProgram = setupShaders(window);
+    unsigned int shaderProgram = setupShaders();
     if (!shaderProgram) {
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error compilating vertex shader", nullptr);
-        cleanup(window);
+        window.close();
+        cleanup();
         return 1;
     }
 
@@ -110,43 +94,15 @@ int main() {
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 
-        // swap buffers
-        SDL_GL_SwapWindow(window);
+        window.swapBuffers();
+
     }
     
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteProgram(shaderProgram);
-    cleanup(window);
+    cleanup();
     return 0;
-}
-
-void setGLContextAttributes() {
-    // OpenGL 3.3
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    // OpenGL Core Profile
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-}
-
-void setGLBufferAttributes() {
-    // 8 bits to each channel RGBA8888
-    // meaning 256 values for each channel (0 to 255)
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
-
-    // double buffer (back and front)
-    // switch with SDL_GL_SwapWindow
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    // if the framebuffer content is preserved when minimizing window
-    SDL_GL_SetAttribute(SDL_GL_RETAINED_BACKING, 0);
-
-    // z-buffer size (usually 24 bits)
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    // stencil buffer size (8 bits)
-    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 }
 
 void getGLVersionInfo() {
@@ -156,7 +112,7 @@ void getGLVersionInfo() {
     std::cout << "Shading Language Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
 }
 
-unsigned int setupShaders(SDL_Window *window) {
+unsigned int setupShaders() {
     int success {};
     char infoLog[512] {};
 
@@ -198,8 +154,7 @@ unsigned int setupShaders(SDL_Window *window) {
     return shaderProgram;
 }
 
-void cleanup(SDL_Window *window) {
+void cleanup() {
     SDL_Log("%s", "CLEANUP");
-    SDL_DestroyWindow(window);
     SDL_Quit();
 }
