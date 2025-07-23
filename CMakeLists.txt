@@ -16,13 +16,24 @@ add_library(nebula_window STATIC
     src/modules/window/Window.cpp
     src/modules/window/Window.h
 )
-
 target_link_libraries(nebula_window PUBLIC 
     SDL3::SDL3
 )
 
+add_library(nebula_graphics STATIC
+#    src/modules/graphics/Graphics.cpp
+#    src/modules/graphics/Graphics.h
+    src/modules/graphics/Shader.cpp
+    src/modules/graphics/Shader.h
+)
+target_link_libraries(nebula_graphics PUBLIC 
+    SDL3::SDL3
+    glad
+)
+
 set(NEBULA_MODULES
     nebula_window
+    nebula_graphics
 )
 
 set(NEBULA_LIBRARIES

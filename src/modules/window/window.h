@@ -1,3 +1,6 @@
+#ifndef WINDOW_H
+#define WINDOW_H
+
 #include <string>
 
 #include <SDL3/SDL.h>
@@ -31,3 +34,5 @@ private:
 
 }
 }
+
+#endif
