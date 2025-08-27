@@ -12,6 +12,11 @@ add_library(glad STATIC
     libs/glad/include/KHR/khrplatform.h
 )
 
+add_library(glm INTERFACE)
+target_link_directories(glm INTERFACE 
+    libs/glm/
+)
+
 add_library(nebula_window STATIC
     src/modules/window/Window.cpp
     src/modules/window/Window.h
@@ -21,8 +26,10 @@ target_link_libraries(nebula_window PUBLIC
 )
 
 add_library(nebula_graphics STATIC
-#    src/modules/graphics/Graphics.cpp
-#    src/modules/graphics/Graphics.h
+    src/modules/graphics/Graphics.cpp
+    src/modules/graphics/Graphics.h
+    src/modules/graphics/Texture.cpp
+    src/modules/graphics/Texture.h
     src/modules/graphics/Shader.cpp
     src/modules/graphics/Shader.h
 )
@@ -31,14 +38,34 @@ target_link_libraries(nebula_graphics PUBLIC
     glad
 )
 
+add_library(nebula_data STATIC
+    src/modules/data/ImageFile.cpp
+    src/modules/data/ImageFile.h
+    src/modules/data/TextFile.cpp
+    src/modules/data/TextFile.h
+)
+
+add_library(nebula_ecs INTERFACE)
+target_link_directories(nebula_ecs INTERFACE 
+    src/modules/ecs/Hash.hpp
+    src/modules/ecs/Definitions.hpp
+    src/modules/ecs/IdStorage.hpp
+    src/modules/ecs/Table.hpp
+    src/modules/ecs/Type.hpp
+    src/modules/ecs/World.hpp
+)
+
 set(NEBULA_MODULES
     nebula_window
     nebula_graphics
+    nebula_data
+    nebula_ecs
 )
 
 set(NEBULA_LIBRARIES
     SDL3::SDL3
     glad
+    glm
 )
 
 include_directories(

@@ -3,60 +3,83 @@
 #include <iostream>
 #include <Window/window.h>
 #include <Graphics/Shader.h>
+#include <Graphics/Texture.h>
+#include <Graphics/Graphics.h>
+#include <Ecs/World.hpp>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
-void getGLVersionInfo();
-void getVertexShaderInfo();
-void cleanup(nebula::window::Window *window);
+struct State {
+    nebula::window::Window* window = nullptr;
+    nebula::graphics::Graphics* graphics = nullptr;
+};
+
+void cleanup(State* s) {
+    delete s->window;
+    delete s->graphics;
+    SDL_Log("%s", "CLEANUP");
+    SDL_Quit();
+}
+
+bool setup(State* s) {
+    nebula::window::Window *window = new nebula::window::Window();
+    window->setWindow();
+
+    int width = window->getWidth();
+    int height = window->getHeight();
+
+    s->window = window;
+
+    nebula::graphics::Graphics *graphics = new nebula::graphics::Graphics(width, height);
+    if (!graphics->initialize()) {
+        SDL_Log("%s", "ERROR INITIALIZING GRAPHICS");
+        return false;
+    }
+
+    s->graphics = graphics;
+    
+    return true;
+}
 
 // cmake . -B build
 // cmake --build build
 // build\Debug\nebula
 
 int main() {
-
-    nebula::window::Window *window = new nebula::window::Window();
-    window->setWindow();
-    
-    int width = window->getWidth();
-    int height = window->getHeight();
-
-    if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
-        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", "Error initializing GLAD", nullptr);
-        cleanup(window);
+    nebula::ecs::World ecs;
+    State s = State();
+    if (!setup(&s)) {
+        cleanup(&s);
         return 1;
     }
-    
-    getGLVersionInfo();
-    getVertexShaderInfo();
 
     float vertices[] = {
-    //    x      y     z     r     g     b
-         0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f,  // bottom left
-         0.0f,  0.5f, 0.0f, 0.0f, 0.0f, 1.0f  // top 
+        // positions          // colors           // texture coords
+         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 0.0f,   // top right
+         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 1.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,   // bottom left
+        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 0.0f    // top left 
     };
 
     unsigned int indices[] = {
-        0, 1, 2
+        1, 2, 3,
+        0, 1, 3
     };
 
-    nebula::graphics::Shader *shader = new nebula::graphics::Shader("resources/shaders/vertexShader.vs", "resources/shaders/fragShader.fs");
+    nebula::graphics::Shader* shader = new nebula::graphics::Shader("resources/shaders/vertexShader.vert", "resources/shaders/fragShader.frag");
+    // maybe shader function to validate? like shader->validate();
     if (!shader->getId()) {
         delete shader;
-        cleanup(window);
+        cleanup(&s);
         return 1;
     }
 
     unsigned int ebo {};
     glGenBuffers(1, &ebo);
 
-    unsigned int vao {};
-    glGenVertexArrays(1, &vao);
-
     unsigned int vbo {};
     glGenBuffers(1, &vbo);
-
-    glBindVertexArray(vao);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
@@ -64,11 +87,16 @@ int main() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
+    glEnableVertexAttribArray(2);
+
+    nebula::graphics::Texture* texture = new nebula::graphics::Texture("resources/textures/container.jpg");
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
@@ -78,8 +106,6 @@ int main() {
 
     bool run = true;
     while (run) {
-
-        glViewport(0, 0, width, height);
 
         SDL_Event event{0};
         while(SDL_PollEvent(&event)) {
@@ -91,44 +117,25 @@ int main() {
             }
         }
 
-        // rendering
-        // (state-setting function)
-        glClearColor(0.07f, 0.0f, 0.125f, 1.0f);
-        // (state-using function) fills the color buffer with the color configured by glClearColor
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
+        s.graphics->setupDraw();
+        texture->use();
+        glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
+        transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
         shader->use();
 
-        glBindVertexArray(vao);
+        unsigned int transformLoc = glGetUniformLocation(shader->getId(), "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
 
-        window->swapBuffers();
+        s.window->swapBuffers();
 
     }
-
-    glDeleteVertexArrays(1, &vao);
+    delete texture;
+    delete shader;
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ebo);
-    cleanup(window);
+    cleanup(&s);
     return 0;
-}
-
-void getGLVersionInfo() {
-    std::cout << "Vendor: " << glGetString(GL_VENDOR) << "\n";
-    std::cout << "Renderer: " << glGetString(GL_RENDERER) << "\n";
-    std::cout << "Version: " << glGetString(GL_VERSION) << "\n";
-    std::cout << "Shading Language Version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << "\n";
-}
-
-void getVertexShaderInfo() {
-    int nrAttributes;
-    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
-    std::cout << "Maximum nr of vertex attributes supported:" << nrAttributes << "\n";
-}
-
-void cleanup(nebula::window::Window *window) {
-    delete window;
-    SDL_Log("%s", "CLEANUP");
-    SDL_Quit();
 }

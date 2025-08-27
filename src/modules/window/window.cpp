@@ -18,6 +18,8 @@ Window::~Window() {
 }
 
 void Window::setWindow(int width, int height) {
+    this->width = width;
+    this->height = height;
     createWindow(width, height);
 }
 
@@ -27,7 +29,6 @@ void Window::close() {
     SDL_DestroyWindow(window);
     SDL_FlushEvents(SDL_EVENT_WINDOW_FIRST, SDL_EVENT_WINDOW_LAST);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
-    SDL_Quit();
 }
 
 bool Window::createWindow(int width, int height) {
