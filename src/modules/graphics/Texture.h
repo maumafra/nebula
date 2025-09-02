@@ -1,5 +1,4 @@
-#ifndef TEXTURE_H
-#define TEXTURE_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -14,7 +13,12 @@ class Texture {
 public:
     Texture(const char* texturePath);
     ~Texture();
-    void use();
+
+    int width, height;
+
+    void bind();
+
+    int getId();
 
 private:
     unsigned int id;
@@ -22,5 +26,3 @@ private:
 
 }// graphics
 }// nebula
-
-#endif

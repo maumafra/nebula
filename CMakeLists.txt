@@ -25,9 +25,24 @@ target_link_libraries(nebula_window PUBLIC
     SDL3::SDL3
 )
 
+add_library(nebula_ecs INTERFACE)
+target_link_directories(nebula_ecs INTERFACE
+    src/modules/ecs/Hash.hpp
+    src/modules/ecs/Definitions.hpp
+    src/modules/ecs/IdStorage.hpp
+    src/modules/ecs/Table.hpp
+    src/modules/ecs/Type.hpp
+    src/modules/ecs/World.hpp
+)
+
 add_library(nebula_graphics STATIC
     src/modules/graphics/Graphics.cpp
     src/modules/graphics/Graphics.h
+    src/modules/graphics/Camera.h
+    src/modules/graphics/Camera.cpp
+    src/modules/graphics/RenderComponents.hpp
+    src/modules/graphics/Renderer.h
+    src/modules/graphics/Renderer.cpp
     src/modules/graphics/Texture.cpp
     src/modules/graphics/Texture.h
     src/modules/graphics/Shader.cpp
@@ -36,6 +51,7 @@ add_library(nebula_graphics STATIC
 target_link_libraries(nebula_graphics PUBLIC 
     SDL3::SDL3
     glad
+    nebula_ecs
 )
 
 add_library(nebula_data STATIC
@@ -43,16 +59,6 @@ add_library(nebula_data STATIC
     src/modules/data/ImageFile.h
     src/modules/data/TextFile.cpp
     src/modules/data/TextFile.h
-)
-
-add_library(nebula_ecs INTERFACE)
-target_link_directories(nebula_ecs INTERFACE 
-    src/modules/ecs/Hash.hpp
-    src/modules/ecs/Definitions.hpp
-    src/modules/ecs/IdStorage.hpp
-    src/modules/ecs/Table.hpp
-    src/modules/ecs/Type.hpp
-    src/modules/ecs/World.hpp
 )
 
 set(NEBULA_MODULES

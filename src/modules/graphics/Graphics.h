@@ -1,13 +1,16 @@
-#ifndef GRAPHICS_H
-#define GRAPHICS_H
+#pragma once
 
 #include <glad/glad.h>
 #include <SDL3/SDL.h>
 
+#include "../Ecs/World.hpp"
 #include "Shader.h"
+#include "Camera.h"
+#include "Renderer.h"
 
 #include <iostream>
-#include <vector>
+#include <string>
+#include <unordered_map>
 
 namespace nebula {
     namespace graphics {
@@ -17,20 +20,25 @@ public:
     Graphics(int width, int height);
     ~Graphics();
     bool initialize();
-    void setupDraw();
+
+    void beginScene(ecs::World* world);
+    void endScene();
+    void draw(ecs::EntityId entity);
+
+    Texture* newSprite(std::string path);
 
 private:
-    unsigned int vao;
     Shader* defaultShader;
-    int width;
-    int height;
+    Camera* defaultCamera;
+    Renderer* renderer;
+
+    int width, height;
+    
     void getGLVersionInfo();
     void getVertexShaderInfo();
     
-    std::vector<GLuint> textures;
+    std::unordered_map<std::string, Texture*> textures;
 }; 
 
 }// graphics
 }// nebula
-
-#endif

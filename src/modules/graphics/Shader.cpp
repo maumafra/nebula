@@ -107,5 +107,9 @@ void Shader::setMat4(const std::string &name, const glm::mat4 &mat) const {
     glUniformMatrix4fv(glGetUniformLocation(id, name.c_str()), 1, GL_FALSE, &mat[0][0]);
 }
 
+void Shader::setUInt32Array(const std::string &name, const uint32_t* data, const int size) const {
+    glUniform1uiv(glGetUniformLocation(id, name.c_str()), size, data);
+}
+
 } // graphics
 } // nebula

@@ -11,35 +11,58 @@
 #include <glm/gtc/type_ptr.hpp>
 
 struct State {
-    nebula::window::Window* window = nullptr;
-    nebula::graphics::Graphics* graphics = nullptr;
+    nebula::window::Window& window;
+    nebula::graphics::Graphics& graphics;
+    nebula::ecs::World& world;
 };
 
-void cleanup(State* s) {
-    delete s->window;
-    delete s->graphics;
+void cleanup(State &s) {
     SDL_Log("%s", "CLEANUP");
     SDL_Quit();
 }
 
-bool setup(State* s) {
-    nebula::window::Window *window = new nebula::window::Window();
-    window->setWindow();
+bool setup(State &s) {
+    s.window.setWindow();
 
-    int width = window->getWidth();
-    int height = window->getHeight();
-
-    s->window = window;
-
-    nebula::graphics::Graphics *graphics = new nebula::graphics::Graphics(width, height);
-    if (!graphics->initialize()) {
+    if (!s.graphics.initialize()) {
         SDL_Log("%s", "ERROR INITIALIZING GRAPHICS");
         return false;
     }
 
-    s->graphics = graphics;
-    
+    auto boxSprite = s.graphics.newSprite("resources/textures/container.jpg");
+    auto ninaSprite = s.graphics.newSprite("resources/textures/Nina.png");
+
+    auto box = s.world.spawn();
+    s.world.addComponent(box, Position{400.0f, 300.0f});
+    s.world.addComponent(box, Sprite{boxSprite});
+    s.world.addComponent(box, Scale{0.5f, 0.5f});
+
+    auto whiteSquare = s.world.spawn();
+    s.world.addComponent(whiteSquare, Position{10.0f, 10.0f});
+    s.world.addComponent(whiteSquare, Quad{100.0f, 200.0f});
+
+    auto nina = s.world.spawn();
+    s.world.addComponent(nina, Position{0.0f, 300.0f});
+    s.world.addComponent(nina, Sprite{ninaSprite});
+    s.world.addComponent(nina, Scale{0.5f, 0.5f});
+
     return true;
+}
+
+void update(State& s) {
+}
+
+void draw(State& s) {
+    s.graphics.beginScene(&s.world);
+
+    auto entities = s.world.getEntitiesWith<Position>();
+
+    for (auto entity : entities) {
+        s.graphics.draw(entity);
+    }
+
+    s.graphics.endScene();
+    s.window.swapBuffers();
 }
 
 // cmake . -B build
@@ -47,66 +70,22 @@ bool setup(State* s) {
 // build\Debug\nebula
 
 int main() {
-    nebula::ecs::World ecs;
-    State s = State();
-    if (!setup(&s)) {
-        cleanup(&s);
+    State s = {
+        nebula::window::Window(),
+        nebula::graphics::Graphics(800, 600),
+        nebula::ecs::World()
+    };
+    if (!setup(s)) {
+        cleanup(s);
         return 1;
     }
-
-    float vertices[] = {
-        // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 0.0f,   // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 1.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 1.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 0.0f    // top left 
-    };
-
-    unsigned int indices[] = {
-        1, 2, 3,
-        0, 1, 3
-    };
-
-    nebula::graphics::Shader* shader = new nebula::graphics::Shader("resources/shaders/vertexShader.vert", "resources/shaders/fragShader.frag");
-    // maybe shader function to validate? like shader->validate();
-    if (!shader->getId()) {
-        delete shader;
-        cleanup(&s);
-        return 1;
-    }
-
-    unsigned int ebo {};
-    glGenBuffers(1, &ebo);
-
-    unsigned int vbo {};
-    glGenBuffers(1, &vbo);
-
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8*sizeof(float), (void*)(6*sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    nebula::graphics::Texture* texture = new nebula::graphics::Texture("resources/textures/container.jpg");
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    update(s);
+    draw(s);
+    update(s);
+    draw(s);
 
     bool run = true;
     while (run) {
-
         SDL_Event event{0};
         while(SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -116,26 +95,7 @@ int main() {
                 }
             }
         }
-
-        s.graphics->setupDraw();
-        texture->use();
-        glm::mat4 transform = glm::mat4(1.0f); // make sure to initialize matrix to identity matrix first
-        transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
-        shader->use();
-
-        unsigned int transformLoc = glGetUniformLocation(shader->getId(), "transform");
-        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
-
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0);
-
-        s.window->swapBuffers();
-
     }
-    delete texture;
-    delete shader;
-    glDeleteBuffers(1, &vbo);
-    glDeleteBuffers(1, &ebo);
-    cleanup(&s);
+    cleanup(s);
     return 0;
 }

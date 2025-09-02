@@ -4,30 +4,43 @@ namespace nebula {
     namespace graphics {
 
 
-Graphics::Graphics(int width, int height) 
-            : vao(NULL)
-            , defaultShader(nullptr)
+Graphics::Graphics(int width, int height)
+            : defaultShader(nullptr)
+            , defaultCamera(nullptr)
+            , renderer(nullptr)
             , width(width)
             , height(height) {
-    this->initialize();
-    this->getGLVersionInfo();
-    this->getVertexShaderInfo();
 }
+
 Graphics::~Graphics() {
     std::cout << "DELETE GRAPHICS" << "\n";
-    glDeleteVertexArrays(1, &vao);
+    delete renderer;
+    delete defaultCamera;
+    delete defaultShader;
+    for (const auto& pair : textures) {
+        delete pair.second;
+    }
 }
 
 bool Graphics::initialize() {
     if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) {
         return false;
     }
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    defaultShader = new Shader("resources/shaders/vertexShader.vert", "resources/shaders/fragShader.frag");
+    if (!defaultShader->getId()) {
+        return false;
+    }
+    defaultCamera = new Camera(width, height);
+    renderer = new Renderer();
+    renderer->init();
+
+    this->getGLVersionInfo();
+    this->getVertexShaderInfo();
+
     return true;
 }
 
-void Graphics::setupDraw() {
+void Graphics::beginScene(ecs::World* world) {
     glViewport(0, 0, width, height);
 
     // (state-setting function)
@@ -35,7 +48,20 @@ void Graphics::setupDraw() {
     // (state-using function) fills the color buffer with the color configured by glClearColor
     glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
-    glBindVertexArray(vao);
+    renderer->begin(world, defaultCamera, defaultShader);
+}
+
+void Graphics::endScene() {
+    renderer->end();
+}
+
+Texture* Graphics::newSprite(std::string path) {
+    if (textures.count(path) != 0) {
+        return textures.at(path);
+    }
+    Texture* tex = new Texture(path.c_str());
+    textures.insert({path, tex});
+    return tex;
 }
 
 void Graphics::getGLVersionInfo() {
@@ -49,6 +75,10 @@ void Graphics::getVertexShaderInfo() {
     int nrAttributes;
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &nrAttributes);
     std::cout << "Maximum nr of vertex attributes supported:" << nrAttributes << "\n";
+}
+
+void Graphics::draw(ecs::EntityId entity) {
+    renderer->drawEntity(entity);
 }
 
 }// graphics

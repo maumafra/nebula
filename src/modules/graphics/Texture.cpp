@@ -21,6 +21,9 @@ Texture::Texture(const char* texturePath) : id(NULL) {
         std::cout << "ERROR::TEXTURE::LOAD_TEXTURE" << "\n";
     }
 
+    this->width = width;
+    this->height = height;
+
     GLenum internalFormat = GL_RGB;
     if (nrChannels == 4) {
         internalFormat = GL_RGBA;
@@ -34,8 +37,11 @@ Texture::Texture(const char* texturePath) : id(NULL) {
 Texture::~Texture(){
 }
 
-void Texture::use() {
-    glActiveTexture(GL_TEXTURE0);
+int Texture::getId() {
+    return id;
+}
+
+void Texture::bind() {
     glBindTexture(GL_TEXTURE_2D, id);
 }
 }// graphics
