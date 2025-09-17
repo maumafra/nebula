@@ -70,6 +70,7 @@ set(NEBULA_MODULES
 
 set(NEBULA_LIBRARIES
     SDL3::SDL3
+    lua-5.4.8
     glad
     glm
 )
@@ -85,6 +86,7 @@ include_directories(
 # Uncomment to use static lib
 # option(BUILD_SHARED_LIBS OFF)
 add_subdirectory(libs/SDL3)
+add_subdirectory(libs/lua-5.4.8)
 
 add_executable(nebula)
 target_sources(nebula PRIVATE src/nebula.cpp)

@@ -9,6 +9,18 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include "modules/scripts/NebulaSetup.hpp"
+
+extern "C" {
+    #include <lua.h>
+    #include <lualib.h>
+    #include <lauxlib.h>
+}
+
+enum RunAction {
+    RUN,
+    QUIT
+};
 
 struct State {
     nebula::window::Window& window;
@@ -32,24 +44,17 @@ bool setup(State &s) {
     auto boxSprite = s.graphics.newSprite("resources/textures/container.jpg");
     auto ninaSprite = s.graphics.newSprite("resources/textures/Nina.png");
 
-    auto box = s.world.spawn();
-    s.world.addComponent(box, Position{400.0f, 300.0f});
-    s.world.addComponent(box, Sprite{boxSprite});
-    s.world.addComponent(box, Scale{0.5f, 0.5f});
-
     auto whiteSquare = s.world.spawn();
     s.world.addComponent(whiteSquare, Position{10.0f, 10.0f});
     s.world.addComponent(whiteSquare, Quad{100.0f, 200.0f});
-
-    auto nina = s.world.spawn();
-    s.world.addComponent(nina, Position{0.0f, 300.0f});
-    s.world.addComponent(nina, Sprite{ninaSprite});
-    s.world.addComponent(nina, Scale{0.5f, 0.5f});
 
     return true;
 }
 
 void update(State& s) {
+    auto e = s.world.getEntitiesWith<Position>()[0];
+    Position* pos = s.world.getComponent<Position>(e);
+    pos->x += 10.0f;
 }
 
 void draw(State& s) {
@@ -69,7 +74,7 @@ void draw(State& s) {
 // cmake --build build
 // build\Debug\nebula
 
-int main() {
+int main2() {
     State s = {
         nebula::window::Window(),
         nebula::graphics::Graphics(800, 600),
@@ -79,10 +84,6 @@ int main() {
         cleanup(s);
         return 1;
     }
-    update(s);
-    draw(s);
-    update(s);
-    draw(s);
 
     bool run = true;
     while (run) {
@@ -95,7 +96,40 @@ int main() {
                 }
             }
         }
+        update(s);
+        draw(s);
     }
     cleanup(s);
     return 0;
+}
+
+static void nlua_PackagePreload(lua_State *L, lua_CFunction func, const char *packName) {
+    // standard lua table "package"
+    lua_getglobal(L, "package"); // places table at the top of stack
+    lua_getfield(L, -1, "preload"); // retrieves the "preload" field from the table at the top of stack (-1)
+    lua_pushcfunction(L, func);
+    lua_setfield(L, -2, packName); // saves func on package at packName (key)
+    lua_pop(L, 2); // pops 2 elements from the stack
+}
+
+
+static RunAction runNebula(int argc, char **argv, int &mainReturn) {
+    // TODO args handling
+
+    lua_State *L = luaL_newstate();
+    luaL_openlibs(L);
+
+    nlua_PackagePreload(L, nlua_nebula, "nebula");
+}
+
+int main(int argc, char **argv) {
+    int mainReturn = 0;
+    RunAction action = RUN;
+
+    do {
+        action = runNebula(argc, argv, mainReturn);
+    } while (action != QUIT);
+
+    SDL_Quit();
+    return mainReturn;
 }
