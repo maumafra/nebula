@@ -22,10 +22,10 @@ public:
 
     static Module *getInstance(const std::string &name);
 
-    template <typename T>
-    static T *getInstance(ModuleDef module) {
-        //return t
-    }
+    //template <typename T>
+    //static T *getInstance(ModuleDef module) {
+    //    //return t
+    //}
 private:
     static void registerInstance(Module *instance);
 

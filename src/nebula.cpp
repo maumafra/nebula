@@ -120,6 +120,8 @@ static RunAction runNebula(int argc, char **argv, int &mainReturn) {
     luaL_openlibs(L);
 
     nlua_PackagePreload(L, nlua_nebula, "nebula");
+
+    return QUIT;
 }
 
 int main(int argc, char **argv) {
